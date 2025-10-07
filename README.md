@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Temporary Task Manager
 
-## Getting Started
+Web-only productivity system enforcing tight priority caps, automated rollovers, and reflective analytics. Built with Next.js 15 (App Router), Supabase, and a modern component stack.
 
-First, run the development server:
+## Tech Stack
+- **Framework**: Next.js 15 · TypeScript · App Router
+- **Styling**: Tailwind CSS v4 · shadcn/ui
+- **State & Data**: Zustand · TanStack Query · Supabase Postgres
+- **Utilities**: Day.js · lucide-react · react-hot-toast
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Project Structure
+```
+app/
+  page.tsx            # Open tasks board
+  today/              # Daily focus view
+  completed/          # Completion log
+  someday/            # Someday/Maybe list
+  graveyard/          # Chronic rollover archive
+  api/                # Next.js edge/server handlers (stubs)
+components/
+  tasks/              # Task board UI components
+  modals/             # Priority & reality check dialogs
+  dashboard/          # Priority usage widgets
+lib/
+  supabase/           # Supabase client factory
+  utils/              # Priority, date, rollover helpers
+  store/              # Zustand task store
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Getting Started
+```bash
+npm install
+npm run dev
+```
+Visit `http://localhost:3000` for the desktop experience. Mobile safari / Chrome can be used for the capture flow once implemented.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Available Scripts
+- `npm run dev` – start local dev server
+- `npm run lint` – run ESLint (Next + Tailwind config)
+- `npm run build` – type-check and produce production build
+- `npm run start` – run production server after building
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Environment Variables
+Create a `.env.local` file with:
+```
+NEXT_PUBLIC_SUPABASE_URL="https://<project>.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="<anon-key>"
+CRON_SECRET="<shared-secret-for-vercel-cron>"
+```
 
-## Learn More
+## Next Implementation Milestones
+1. Connect Supabase schema + migrations (tasks, history, stats tables)
+2. Wire Supabase RPCs into `/api` routes (priority limits, rollovers, analytics)
+3. Add React Query hooks + optimistic updates for quick actions
+4. Implement reality-check modal flows + override logging
+5. Deliver analytics dashboard + Graveyard insights
+6. Ship PWA enhancements (manifest, offline cache, background sync)
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Notes
+- The repo currently ships placeholder API handlers (`501` responses) and mocked UI actions. These are ready to be replaced with live integrations.
+- A pnpm lockfile exists higher in the filesystem hierarchy. Configure `outputFileTracingRoot` in `next.config.ts` or remove unused lockfiles to silence the Next.js warning during builds.
+- Tailwind v4 via `@import "tailwindcss";` requires Node 18.17+. Ensure CI/CD matches local versions.
