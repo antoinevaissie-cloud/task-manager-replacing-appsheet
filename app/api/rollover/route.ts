@@ -3,6 +3,10 @@ import dayjs from "dayjs";
 
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { taskRowToTask, TaskRow } from "@/lib/supabase/mappers";
+import {
+  determineRealityStage,
+  shouldTriggerRealityCheck,
+} from "@/lib/utils/realityCheck";
 
 export async function POST(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -40,11 +44,24 @@ export async function POST(request: Request) {
 
   for (const task of tasks) {
     const newRolloverCount = (task.rollover_count ?? 0) + 1;
-    const shouldArchive = newRolloverCount >= 10;
+    const nextStage = determineRealityStage(newRolloverCount);
+    const shouldArchive = nextStage === "auto_archive";
+    const currentTask = taskRowToTask(task);
+    const triggerRealityCheck = shouldTriggerRealityCheck(currentTask, nextStage);
+    let realityStage = shouldArchive ? "auto_archive" : nextStage;
+    let realityDueAt = shouldArchive ? null : task.reality_check_due_at;
+    if (!shouldArchive && nextStage === "none") {
+      realityDueAt = null;
+      realityStage = "none";
+    } else if (triggerRealityCheck) {
+      realityDueAt = dayjs().toISOString();
+    }
     const updatePayload: Partial<TaskRow> = {
       due_date: today.format("YYYY-MM-DD"),
       rollover_count: newRolloverCount,
       last_rolled_over_at: dayjs().toISOString(),
+      reality_check_stage: realityStage,
+      reality_check_due_at: realityDueAt,
       ...(shouldArchive ? { status: "archived" as TaskRow["status"] } : {}),
     };
 
@@ -76,6 +93,12 @@ export async function POST(request: Request) {
       await supabase.from("graveyard").insert({
         task_id: task.id,
         reason: "Auto-archived after 10 rollovers",
+      });
+      await supabase.from("reality_check_events").insert({
+        task_id: task.id,
+        stage: "auto_archive",
+        decision: "auto_archive",
+        decision_at: dayjs().toISOString(),
       });
     }
 
