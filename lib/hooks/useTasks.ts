@@ -10,16 +10,19 @@ import { toast } from "react-hot-toast";
 
 import { useTaskStore } from "@/lib/store/taskStore";
 import { Task, TaskPriority } from "@/types/task";
+import { normalizeTask } from "@/lib/utils/status";
 
 const TASKS_QUERY_KEY = ["tasks"];
 
 interface CreateTaskPayload {
   title: string;
   urgency: TaskPriority;
-  dueDate: string;
+  dueDate: string | null;
   description?: string | null;
   notes?: string | null;
   context?: string | null;
+  projectId?: string | null;
+  urls?: string[] | null;
   tags?: string[] | null;
   someday?: boolean;
   followUpItem?: boolean;
@@ -101,11 +104,12 @@ export function useTaskMutations() {
       return body.task;
     },
     onSuccess: (task) => {
+      const normalized = normalizeTask(task);
       queryClient.setQueryData<Task[]>(TASKS_QUERY_KEY, (current) => {
-        const next = current ? current.filter((existing) => existing.id !== task.id) : [];
-        return [task, ...next];
+        const next = current ? current.filter((existing) => existing.id !== normalized.id) : [];
+        return [normalized, ...next];
       });
-      upsertTask(task);
+      upsertTask(normalized);
       toast.success("Task added");
     },
     onError: (error) => {
@@ -138,7 +142,9 @@ export function useTaskMutations() {
       await queryClient.cancelQueries({ queryKey: TASKS_QUERY_KEY });
       const previous = queryClient.getQueryData<Task[]>(TASKS_QUERY_KEY) ?? [];
       const optimistic = previous.map((task) =>
-        task.id === id ? { ...task, ...updates, updatedAt: new Date().toISOString() } : task,
+        task.id === id
+          ? normalizeTask({ ...task, ...updates, updatedAt: new Date().toISOString() })
+          : task,
       );
       queryClient.setQueryData(TASKS_QUERY_KEY, optimistic);
       mutateTask(id, (current) => ({ ...current, ...updates, updatedAt: new Date().toISOString() }));
@@ -153,11 +159,12 @@ export function useTaskMutations() {
       }
     },
     onSuccess: (task) => {
+      const normalized = normalizeTask(task);
       queryClient.setQueryData<Task[]>(TASKS_QUERY_KEY, (current) => {
-        if (!current) return [task];
-        return current.map((existing) => (existing.id === task.id ? task : existing));
+        if (!current) return [normalized];
+        return current.map((existing) => (existing.id === normalized.id ? normalized : existing));
       });
-      upsertTask(task);
+      upsertTask(normalized);
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: TASKS_QUERY_KEY });

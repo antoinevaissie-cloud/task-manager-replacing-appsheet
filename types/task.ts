@@ -15,13 +15,15 @@ export interface Task {
   description?: string | null;
   urgency: TaskPriority;
   status: TaskStatus;
-  dueDate: string; // ISO date string
+  dueDate: string | null; // ISO date string when scheduled
   rolloverCount: number;
   rescheduleCount: number;
   lastRolledOverAt?: string | null;
   lastRescheduledAt?: string | null;
   tags?: string[] | null;
   context?: string | null;
+  projectId?: string | null;
+  urls?: string[] | null;
   someday: boolean;
   followUpItem: boolean;
   notes?: string | null;

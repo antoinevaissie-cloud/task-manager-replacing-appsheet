@@ -108,6 +108,44 @@ export type Database = {
           },
         ]
       }
+      reality_check_events: {
+        Row: {
+          created_at: string
+          decision: string | null
+          decision_at: string | null
+          id: string
+          notes: string | null
+          stage: Database["public"]["Enums"]["reality_check_stage"]
+          task_id: string
+        }
+        Insert: {
+          created_at?: string
+          decision?: string | null
+          decision_at?: string | null
+          id?: string
+          notes?: string | null
+          stage: Database["public"]["Enums"]["reality_check_stage"]
+          task_id: string
+        }
+        Update: {
+          created_at?: string
+          decision?: string | null
+          decision_at?: string | null
+          id?: string
+          notes?: string | null
+          stage?: Database["public"]["Enums"]["reality_check_stage"]
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reality_check_events_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rollover_history: {
         Row: {
           automatic: boolean
@@ -170,12 +208,15 @@ export type Database = {
           context: string | null
           created_at: string
           description: string | null
-          due_date: string
+          due_date: string | null
           follow_up_item: boolean
           id: string
           last_rescheduled_at: string | null
           last_rolled_over_at: string | null
           notes: string | null
+          project_id: string | null
+          reality_check_due_at: string | null
+          reality_check_stage: Database["public"]["Enums"]["reality_check_stage"]
           reschedule_count: number
           rollover_count: number
           someday: boolean
@@ -185,18 +226,22 @@ export type Database = {
           title: string
           updated_at: string
           urgency: Database["public"]["Enums"]["task_priority"]
+          urls: string[] | null
         }
         Insert: {
           completed_at?: string | null
           context?: string | null
           created_at?: string
           description?: string | null
-          due_date: string
+          due_date: string | null
           follow_up_item?: boolean
           id?: string
           last_rescheduled_at?: string | null
           last_rolled_over_at?: string | null
           notes?: string | null
+          project_id?: string | null
+          reality_check_due_at?: string | null
+          reality_check_stage?: Database["public"]["Enums"]["reality_check_stage"]
           reschedule_count?: number
           rollover_count?: number
           someday?: boolean
@@ -206,18 +251,22 @@ export type Database = {
           title: string
           updated_at?: string
           urgency?: Database["public"]["Enums"]["task_priority"]
+          urls?: string[] | null
         }
         Update: {
           completed_at?: string | null
           context?: string | null
           created_at?: string
           description?: string | null
-          due_date?: string
+          due_date?: string | null
           follow_up_item?: boolean
           id?: string
           last_rescheduled_at?: string | null
           last_rolled_over_at?: string | null
           notes?: string | null
+          project_id?: string | null
+          reality_check_due_at?: string | null
+          reality_check_stage?: Database["public"]["Enums"]["reality_check_stage"]
           reschedule_count?: number
           rollover_count?: number
           someday?: boolean
@@ -227,6 +276,7 @@ export type Database = {
           title?: string
           updated_at?: string
           urgency?: Database["public"]["Enums"]["task_priority"]
+          urls?: string[] | null
         }
         Relationships: []
       }
@@ -238,6 +288,12 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      reality_check_stage:
+        | "none"
+        | "warning"
+        | "alert"
+        | "intervention"
+        | "auto_archive"
       task_priority: "P1" | "P2" | "P3" | "P4"
       task_status: "open" | "completed" | "archived" | "waiting"
     }
@@ -367,6 +423,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      reality_check_stage: [
+        "none",
+        "warning",
+        "alert",
+        "intervention",
+        "auto_archive",
+      ],
       task_priority: ["P1", "P2", "P3", "P4"],
       task_status: ["open", "completed", "archived", "waiting"],
     },

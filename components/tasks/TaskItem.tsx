@@ -2,8 +2,10 @@ import { cn } from "@/lib/utils";
 import { Task } from "@/types/task";
 import { QuickActions } from "./QuickActions";
 import { formatDisplayDate, isPastDue } from "@/lib/utils/dateHelpers";
-import { priorityColors, priorityLabels } from "@/lib/utils/priorityHelpers";
+import { normalizeStatus } from "@/lib/utils/status";
+import { priorityBadgeClasses, priorityLabels } from "@/lib/utils/priorityHelpers";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { useTaskStore } from "@/lib/store/taskStore";
 import type { ReactNode } from "react";
 
@@ -12,14 +14,29 @@ interface TaskItemProps {
   allowSelection?: boolean;
   draggableHandle?: ReactNode;
   onClick?: (task: Task) => void;
+  showDescription?: boolean;
 }
 
-export function TaskItem({ task, allowSelection = false, draggableHandle, onClick }: TaskItemProps) {
-  const badgeColor = priorityColors[task.urgency];
+export function TaskItem({
+  task,
+  allowSelection = false,
+  draggableHandle,
+  onClick,
+  showDescription = true,
+}: TaskItemProps) {
+  const badgeClasses = priorityBadgeClasses[task.urgency];
+  const normalizedStatus = normalizeStatus(task.status);
   const isOverdue = isPastDue(task.dueDate);
+  const priorityLabel = priorityLabels[task.urgency];
+  const badgeText = task.urgency === "P1" ? "❗P1" : task.urgency;
   const selectedIds = useTaskStore((state) => state.selectedTaskIds);
   const toggleTaskSelection = useTaskStore((state) => state.toggleTaskSelection);
   const isSelected = selectedIds.has(task.id);
+  const scheduleLabel = task.someday || normalizedStatus === "waiting"
+    ? "Someday"
+    : task.dueDate
+      ? `Due ${formatDisplayDate(task.dueDate)}`
+      : "No due date";
 
   return (
     <article
@@ -48,19 +65,36 @@ export function TaskItem({ task, allowSelection = false, draggableHandle, onClic
             onClick={() => onClick?.(task)}
             className="flex-1 space-y-1 text-left"
           >
-            <div className="flex items-center gap-2">
-              <span className={cn("h-2 w-2 rounded-full", badgeColor)} aria-hidden />
-              <p className="text-sm font-medium leading-none">{task.title}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                className={cn(
+                  "inline-flex items-center rounded-full border px-2 py-1 text-xs font-semibold uppercase tracking-wide",
+                  badgeClasses,
+                )}
+              >
+                {badgeText}
+              </span>
+              <p className="text-sm font-semibold leading-none">{task.title}</p>
+              {task.projectId ? (
+                <Badge variant="outline" className="text-[11px] uppercase tracking-wide">
+                  {task.projectId}
+                </Badge>
+              ) : null}
+              {task.followUpItem ? (
+                <Badge variant="secondary" className="text-[11px] uppercase tracking-wide">
+                  Follow-up
+                </Badge>
+              ) : null}
             </div>
-            {task.description ? (
+            {showDescription && task.description ? (
               <p className="text-sm text-muted-foreground">{task.description}</p>
             ) : null}
             <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-              <span>{priorityLabels[task.urgency]}</span>
+              <span>{priorityLabel}</span>
               <span className="capitalize">{task.status}</span>
               <span>
-                Due {formatDisplayDate(task.dueDate)}
-                {isOverdue && task.status === "open" ? (
+                {scheduleLabel}
+                {isOverdue && normalizedStatus === "open" ? (
                   <span className="ml-1 text-red-500">• Overdue</span>
                 ) : null}
               </span>
@@ -68,7 +102,7 @@ export function TaskItem({ task, allowSelection = false, draggableHandle, onClic
             </div>
           </button>
         </div>
-        {task.status === "open" ? <QuickActions task={task} /> : null}
+        {normalizedStatus === "open" || normalizedStatus === "waiting" ? <QuickActions task={task} /> : null}
       </div>
     </article>
   );

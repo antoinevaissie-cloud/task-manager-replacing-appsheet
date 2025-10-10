@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { Task, TaskPriority, TaskStatus } from "@/types/task";
+import { normalizeTask } from "@/lib/utils/status";
 
 type TaskStoreState = {
   tasks: Task[];
@@ -42,16 +43,17 @@ export const useTaskStore = create<TaskStoreState>((set) => ({
   activeTaskId: null,
   pendingRealityTaskIds: [],
   activeRealityTaskId: null,
-  setTasks: (tasks) => set({ tasks }),
+  setTasks: (tasks) => set({ tasks: tasks.map((task) => normalizeTask(task)) }),
   upsertTask: (task) =>
     set((state) => {
+      const normalized = normalizeTask(task);
       const existingIndex = state.tasks.findIndex((t) => t.id === task.id);
       if (existingIndex === -1) {
-        return { tasks: [task, ...state.tasks] };
+        return { tasks: [normalized, ...state.tasks] };
       }
 
       const nextTasks = [...state.tasks];
-      nextTasks[existingIndex] = task;
+      nextTasks[existingIndex] = normalized;
       return { tasks: nextTasks };
     }),
   removeTask: (taskId) =>
@@ -67,7 +69,7 @@ export const useTaskStore = create<TaskStoreState>((set) => ({
 
       const nextTasks = [...state.tasks];
       const original = nextTasks[index];
-      const updatedTask = updater(original);
+      const updatedTask = normalizeTask(updater(original));
       nextTasks[index] = updatedTask;
 
       return { tasks: nextTasks };

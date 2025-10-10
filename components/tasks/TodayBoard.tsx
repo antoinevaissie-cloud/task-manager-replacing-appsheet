@@ -9,24 +9,48 @@ import { useTasksData } from "@/lib/hooks/useTasks";
 export function TodayBoard() {
   const { isLoading } = useTasksData();
   const tasks = useTaskStore((state) => state.tasks);
+  const searchQuery = useTaskStore((state) => state.searchQuery);
   const error = useTaskStore((state) => state.error);
   const setActiveTaskId = useTaskStore((state) => state.setActiveTaskId);
 
   const { overdue, today, upcoming, completed } = useMemo(() => {
     const startOfDay = dayjs().startOf("day");
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    const matchesSearch = (title: string, description?: string | null, notes?: string | null) => {
+      if (!normalizedQuery) return true;
+      return (
+        title.toLowerCase().includes(normalizedQuery) ||
+        (description ? description.toLowerCase().includes(normalizedQuery) : false) ||
+        (notes ? notes.toLowerCase().includes(normalizedQuery) : false)
+      );
+    };
     const overdueTasks = [];
     const todayTasks = [];
     const upcomingTasks = [];
     const completedToday = [];
 
     for (const task of tasks) {
-      const due = dayjs(task.dueDate);
+      if (!matchesSearch(task.title, task.description ?? null, task.notes)) {
+        continue;
+      }
+
+      if (task.someday) {
+        continue;
+      }
+
       if (task.status === "completed") {
         if (task.completedAt && dayjs(task.completedAt).isSame(startOfDay, "day")) {
           completedToday.push(task);
         }
         continue;
       }
+
+      if (!task.dueDate) {
+        upcomingTasks.push(task);
+        continue;
+      }
+
+      const due = dayjs(task.dueDate);
 
       if (due.isBefore(startOfDay, "day")) {
         overdueTasks.push(task);
@@ -43,7 +67,7 @@ export function TodayBoard() {
       upcoming: upcomingTasks,
       completed: completedToday,
     };
-  }, [tasks]);
+  }, [tasks, searchQuery]);
 
   return (
     <div className="space-y-8">

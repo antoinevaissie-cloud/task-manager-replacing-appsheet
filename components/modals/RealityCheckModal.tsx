@@ -2,8 +2,7 @@
 
 import { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-
-export type RealityCheckStage = "warning" | "alert" | "intervention" | "auto-archive";
+import type { RealityCheckStage } from "@/types/task";
 
 interface RealityCheckAction {
   key: string;
@@ -35,7 +34,7 @@ const stageCopy: Record<RealityCheckStage, { title: string; tone: string }> = {
     title: "Break the bottleneck",
     tone: "Seven rollovers suggests friction. Choose how to unblock progress.",
   },
-  "auto-archive": {
+  auto_archive: {
     title: "Auto-archived",
     tone: "Ten rollovers reached. The task has been moved to the Graveyard to protect focus.",
   },
@@ -53,6 +52,10 @@ export function RealityCheckModal({
   if (!open) return null;
 
   const copy = stageCopy[stage];
+
+  if (!copy) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">

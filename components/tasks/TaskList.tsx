@@ -16,7 +16,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
 import type { ReactNode } from "react";
-import { Task } from "@/types/task";
+import { Task, TaskPriority } from "@/types/task";
 import { TaskItem } from "./TaskItem";
 import { useTaskStore } from "@/lib/store/taskStore";
 import { useTaskMutations } from "@/lib/hooks/useTasks";
@@ -29,15 +29,18 @@ interface TaskListProps {
   enableReorder?: boolean;
   onTaskClick?: (task: Task) => void;
   emptyAction?: ReactNode;
+  sortStrategy?: "default" | "urgency";
+  showDescription?: boolean;
 }
 
 interface SortableTaskItemProps {
   task: Task;
   enableSelection: boolean;
   onTaskClick?: (task: Task) => void;
+  showDescription: boolean;
 }
 
-function SortableTaskItem({ task, enableSelection, onTaskClick }: SortableTaskItemProps) {
+function SortableTaskItem({ task, enableSelection, onTaskClick, showDescription }: SortableTaskItemProps) {
   const {
     attributes,
     listeners,
@@ -71,6 +74,7 @@ function SortableTaskItem({ task, enableSelection, onTaskClick }: SortableTaskIt
         allowSelection={enableSelection}
         draggableHandle={handle}
         onClick={onTaskClick}
+        showDescription={showDescription}
       />
     </div>
   );
@@ -84,6 +88,8 @@ export function TaskList({
   enableReorder = false,
   onTaskClick,
   emptyAction,
+  sortStrategy = "default",
+  showDescription = true,
 }: TaskListProps) {
   const reorderTasks = useTaskStore((state) => state.reorderTasks);
   const { updateTask } = useTaskMutations();
@@ -98,13 +104,29 @@ export function TaskList({
     );
   }
 
+  const URGENCY_ORDER: Record<TaskPriority, number> = { P1: 0, P2: 1, P3: 2, P4: 3 };
+
+  const compareDueDates = (first: string | null, second: string | null) => {
+    if (first === second) return 0;
+    if (!first) return 1;
+    if (!second) return -1;
+    return first.localeCompare(second);
+  };
+
   const sortedTasks = [...tasks].sort((a, b) => {
+    if (sortStrategy === "urgency") {
+      const urgencyDiff = URGENCY_ORDER[a.urgency] - URGENCY_ORDER[b.urgency];
+      if (urgencyDiff !== 0) return urgencyDiff;
+      const dueComparison = compareDueDates(a.dueDate ?? null, b.dueDate ?? null);
+      if (dueComparison !== 0) return dueComparison;
+      return a.createdAt.localeCompare(b.createdAt);
+    }
+
     if (a.sortOrder != null && b.sortOrder != null) {
       return a.sortOrder - b.sortOrder;
     }
-    if (a.dueDate !== b.dueDate) {
-      return a.dueDate.localeCompare(b.dueDate);
-    }
+    const dueComparison = compareDueDates(a.dueDate ?? null, b.dueDate ?? null);
+    if (dueComparison !== 0) return dueComparison;
     return a.createdAt.localeCompare(b.createdAt);
   });
 
@@ -145,6 +167,7 @@ export function TaskList({
                     task={task}
                     enableSelection={enableSelection}
                     onTaskClick={onTaskClick}
+                    showDescription={showDescription}
                   />
                 </li>
               ))}
@@ -155,7 +178,12 @@ export function TaskList({
         <ul className="space-y-2">
           {sortedTasks.map((task) => (
             <li key={task.id}>
-              <TaskItem task={task} allowSelection={enableSelection} onClick={onTaskClick} />
+              <TaskItem
+                task={task}
+                allowSelection={enableSelection}
+                onClick={onTaskClick}
+                showDescription={showDescription}
+              />
             </li>
           ))}
         </ul>

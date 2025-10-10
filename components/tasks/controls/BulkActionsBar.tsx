@@ -11,6 +11,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { useTaskStore } from "@/lib/store/taskStore";
 import { useTaskMutations } from "@/lib/hooks/useTasks";
 import { Task, TaskPriority } from "@/types/task";
@@ -25,6 +34,8 @@ export function BulkActionsBar() {
   const tasks = useTaskStore((state) => state.tasks);
   const { updateTask } = useTaskMutations();
   const [isProcessing, setProcessing] = useState(false);
+  const [isDateDialogOpen, setDateDialogOpen] = useState(false);
+  const [customDate, setCustomDate] = useState(() => dayjs().format("YYYY-MM-DD"));
 
   const selectedCount = selectedTaskIds.size;
   if (selectedCount === 0) return null;
@@ -63,7 +74,8 @@ export function BulkActionsBar() {
     performBulkUpdate(
       {
         someday: true,
-        status: "open",
+        status: "waiting",
+        dueDate: null,
       },
       "Tasks moved to Someday",
     );
@@ -75,6 +87,8 @@ export function BulkActionsBar() {
         dueDate: dayjs().add(1, "day").format("YYYY-MM-DD"),
         rescheduleCount: (task?.rescheduleCount ?? 0) + 1,
         lastRescheduledAt: dayjs().toISOString(),
+        status: "open",
+        someday: false,
       };
     }, "Tasks rescheduled");
 
@@ -93,6 +107,24 @@ export function BulkActionsBar() {
     await performBulkUpdate({ urgency: priority }, `Priority changed to ${priorityLabels[priority]}`);
   };
 
+  const rescheduleToDate = async () => {
+    if (!customDate) {
+      toast.error("Select a new date");
+      return;
+    }
+    await performBulkUpdate((taskId) => {
+      const task = tasks.find((item) => item.id === taskId);
+      return {
+        dueDate: customDate,
+        rescheduleCount: (task?.rescheduleCount ?? 0) + 1,
+        lastRescheduledAt: dayjs().toISOString(),
+        status: "open",
+        someday: false,
+      };
+    }, "Tasks rescheduled");
+    setDateDialogOpen(false);
+  };
+
   return (
     <div className="sticky top-20 z-30 flex items-center justify-between gap-3 rounded-xl border bg-background/95 px-4 py-3 shadow-lg backdrop-blur">
       <span className="text-sm font-medium">
@@ -107,6 +139,9 @@ export function BulkActionsBar() {
         </Button>
         <Button variant="secondary" size="sm" onClick={rescheduleTomorrow} disabled={isProcessing}>
           +1 day
+        </Button>
+        <Button variant="secondary" size="sm" onClick={() => setDateDialogOpen(true)} disabled={isProcessing}>
+          Set date
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -128,6 +163,24 @@ export function BulkActionsBar() {
           Clear
         </Button>
       </div>
+
+      <Dialog open={isDateDialogOpen} onOpenChange={setDateDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Reschedule selected tasks</DialogTitle>
+            <DialogDescription>Pick a new due date for the selected tasks.</DialogDescription>
+          </DialogHeader>
+          <Input type="date" value={customDate} onChange={(event) => setCustomDate(event.target.value)} />
+          <DialogFooter className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setDateDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => void rescheduleToDate()} disabled={isProcessing || !customDate}>
+              Save date
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -60,6 +60,8 @@ interface CreateTaskBody {
   dueDate?: string;
   notes?: string | null;
   context?: string | null;
+  projectId?: string | null;
+  urls?: string[] | null;
   tags?: string[] | null;
   someday?: boolean;
   followUpItem?: boolean;
@@ -75,7 +77,21 @@ export async function POST(request: Request) {
 
   const title = typeof body.title === "string" ? body.title.trim() : "";
   const urgency = body.urgency ?? "P3";
-  const dueDate = body.dueDate ?? dayjs().format("YYYY-MM-DD");
+  const dueDate =
+    typeof body.dueDate === "string" && body.dueDate.trim().length > 0
+      ? body.dueDate.trim()
+      : body.someday
+        ? null
+        : dayjs().format("YYYY-MM-DD");
+  const projectId =
+    typeof body.projectId === "string" && body.projectId.trim().length > 0
+      ? body.projectId.trim()
+      : null;
+  const urls = Array.isArray(body.urls)
+    ? body.urls
+        .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+        .filter((entry) => entry.length > 0)
+    : null;
 
   if (!title) {
     return NextResponse.json({ message: "Task title is required" }, { status: 400 });
@@ -115,10 +131,12 @@ export async function POST(request: Request) {
     title,
     description: body.description ?? null,
     urgency,
-    status: "open",
+    status: body.someday ? "waiting" : "open",
     dueDate,
     notes: body.notes ?? null,
     context: body.context ?? null,
+    projectId,
+    urls,
     tags: body.tags ?? null,
     someday: body.someday ?? false,
     followUpItem: body.followUpItem ?? false,

@@ -1,4 +1,5 @@
 import { RealityCheckStage, Task, TaskPriority, TaskStatus } from "@/types/task";
+import { normalizeStatus } from "@/lib/utils/status";
 
 export interface TaskRow {
   id: string;
@@ -6,13 +7,14 @@ export interface TaskRow {
   description: string | null;
   urgency: TaskPriority;
   status: TaskStatus;
-  due_date: string;
+  due_date: string | null;
   rollover_count: number;
   reschedule_count: number;
   last_rolled_over_at: string | null;
   last_rescheduled_at: string | null;
   tags: string[] | null;
   context: string | null;
+  project_id: string | null;
   someday: boolean;
   follow_up_item: boolean;
   notes: string | null;
@@ -22,6 +24,7 @@ export interface TaskRow {
   created_at: string;
   updated_at: string;
   completed_at: string | null;
+  urls: string[] | null;
 }
 
 export interface TaskInsertRow {
@@ -29,13 +32,14 @@ export interface TaskInsertRow {
   description?: string | null;
   urgency: TaskPriority;
   status?: TaskStatus;
-  due_date: string;
+  due_date: string | null;
   rollover_count?: number;
   reschedule_count?: number;
   last_rolled_over_at?: string | null;
   last_rescheduled_at?: string | null;
   tags?: string[] | null;
   context?: string | null;
+  project_id?: string | null;
   someday?: boolean;
   follow_up_item?: boolean;
   notes?: string | null;
@@ -43,6 +47,7 @@ export interface TaskInsertRow {
   reality_check_due_at?: string | null;
   sort_order?: number | null;
   completed_at?: string | null;
+  urls?: string[] | null;
 }
 
 export type TaskUpdateRow = Partial<TaskInsertRow>;
@@ -52,7 +57,7 @@ export const taskRowToTask = (row: TaskRow): Task => ({
   title: row.title,
   description: row.description,
   urgency: row.urgency,
-  status: row.status,
+  status: normalizeStatus(row.status),
   dueDate: row.due_date,
   rolloverCount: row.rollover_count,
   rescheduleCount: row.reschedule_count,
@@ -60,6 +65,7 @@ export const taskRowToTask = (row: TaskRow): Task => ({
   lastRescheduledAt: row.last_rescheduled_at,
   tags: row.tags,
   context: row.context,
+  projectId: row.project_id,
   someday: row.someday,
   followUpItem: row.follow_up_item,
   notes: row.notes,
@@ -69,6 +75,7 @@ export const taskRowToTask = (row: TaskRow): Task => ({
   createdAt: row.created_at,
   updatedAt: row.updated_at,
   completedAt: row.completed_at,
+  urls: row.urls,
 });
 
 export const taskToInsertRow = (task: {
@@ -76,14 +83,16 @@ export const taskToInsertRow = (task: {
   description?: string | null;
   urgency: TaskPriority;
   status?: TaskStatus;
-  dueDate: string;
+  dueDate: string | null;
   rolloverCount?: number;
   rescheduleCount?: number;
   tags?: string[] | null;
   context?: string | null;
+  projectId?: string | null;
   someday?: boolean;
   followUpItem?: boolean;
   notes?: string | null;
+  urls?: string[] | null;
   sortOrder?: number | null;
   completedAt?: string | null;
 }): TaskInsertRow => ({
@@ -96,6 +105,7 @@ export const taskToInsertRow = (task: {
   reschedule_count: task.rescheduleCount,
   tags: task.tags ?? null,
   context: task.context ?? null,
+  project_id: task.projectId ?? null,
   someday: task.someday,
   follow_up_item: task.followUpItem,
   notes: task.notes ?? null,
@@ -103,6 +113,7 @@ export const taskToInsertRow = (task: {
   reality_check_due_at: task.realityCheckDueAt ?? null,
   sort_order: task.sortOrder ?? null,
   completed_at: task.completedAt ?? null,
+  urls: task.urls ?? null,
 });
 
 export const taskPatchToUpdateRow = (patch: Partial<Task>): TaskUpdateRow => {
@@ -118,9 +129,11 @@ export const taskPatchToUpdateRow = (patch: Partial<Task>): TaskUpdateRow => {
   if (patch.lastRescheduledAt !== undefined) update.last_rescheduled_at = patch.lastRescheduledAt;
   if (patch.tags !== undefined) update.tags = patch.tags;
   if (patch.context !== undefined) update.context = patch.context;
+  if (patch.projectId !== undefined) update.project_id = patch.projectId;
   if (patch.someday !== undefined) update.someday = patch.someday;
   if (patch.followUpItem !== undefined) update.follow_up_item = patch.followUpItem;
   if (patch.notes !== undefined) update.notes = patch.notes;
+  if (patch.urls !== undefined) update.urls = patch.urls;
   if (patch.realityCheckStage !== undefined) update.reality_check_stage = patch.realityCheckStage;
   if (patch.realityCheckDueAt !== undefined) update.reality_check_due_at = patch.realityCheckDueAt;
   if (patch.sortOrder !== undefined) update.sort_order = patch.sortOrder;

@@ -21,6 +21,13 @@ export const priorityColors: Record<TaskPriority, string> = {
   P4: "bg-gray-400",
 };
 
+export const priorityBadgeClasses: Record<TaskPriority, string> = {
+  P1: "bg-red-600 text-red-50 border-red-700",
+  P2: "bg-orange-500 text-white border-orange-600",
+  P3: "bg-amber-400 text-amber-950 border-amber-500",
+  P4: "bg-slate-200 text-slate-900 border-slate-300",
+};
+
 export const getPriorityLimit = (priority: TaskPriority): number | undefined =>
   PRIORITY_LIMITS[priority];
 

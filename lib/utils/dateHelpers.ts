@@ -11,6 +11,7 @@ export const nextMonday = () => {
   return base.add(diff, "day");
 };
 
-export const formatDisplayDate = (value: string) => dayjs(value).format("MMM D, YYYY");
+export const formatDisplayDate = (value?: string | null) =>
+  value ? dayjs(value).format("MMM D, YYYY") : "No due date";
 
-export const isPastDue = (value: string) => dayjs(value).isBefore(today(), "day");
+export const isPastDue = (value?: string | null) => (value ? dayjs(value).isBefore(today(), "day") : false);
